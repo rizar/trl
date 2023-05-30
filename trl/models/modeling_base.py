@@ -214,7 +214,7 @@ class PreTrainedModelWrapper(nn.Module):
             sharded_index_filename = os.path.join(pretrained_model_name_or_path, "pytorch_model.bin.index.json")
             is_shared = False
 
-            if not os.path.exists(filename):
+            if not os.path.exists(filename) and not os.path.exists(sharded_index_filename):
                 try:
                     filename = hf_hub_download(pretrained_model_name_or_path, "pytorch_model.bin")
                 # sharded

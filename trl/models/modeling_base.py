@@ -212,7 +212,8 @@ class PreTrainedModelWrapper(nn.Module):
         if isinstance(pretrained_model_name_or_path, str):
             filename = os.path.join(pretrained_model_name_or_path, "pytorch_model.bin")
             sharded_index_filename = os.path.join(pretrained_model_name_or_path, "pytorch_model.bin.index.json")
-            is_shared = False
+            is_sharded = False
+            is_local = os.path.isdir(pretrained_model_name_or_path)
 
             if not os.path.exists(filename):
                 try:
@@ -241,13 +242,16 @@ class PreTrainedModelWrapper(nn.Module):
                         for k, v in index["weight_map"].items():
                             if any([module in k for module in cls.supported_modules]):
                                 files_to_download.add(v)
-                        is_shared = True
+                        is_sharded = True
             if is_resuming_training:
-                if is_shared:
+                if is_sharded:
                     # download each file and add it to the state_dict
                     state_dict = {}
                     for shard_file in files_to_download:
-                        filename = hf_hub_download(pretrained_model_name_or_path, shard_file)
+                        if is_local:
+                            filename = os.path.join(pretrained_model_name_or_path, shard_file)
+                        else:
+                            filename = hf_hub_download(pretrained_model_name_or_path, shard_file)
                         state_dict.update(torch.load(filename, map_location="cpu"))
                 else:
                     state_dict = torch.load(filename, map_location="cpu")
